@@ -1,7 +1,7 @@
 # AIPI-540-CV-Team-2-Project
 
-## Category: Social Media & News
-## Type: Computer Vision
+#### Category: Social Media & News
+#### Type: Computer Vision
 
 
 #### Datasets
