@@ -1,5 +1,9 @@
 # AIPI-540-CV-Team-2-Project
 
+#### Category: Social Media & News
+#### Type: Computer Vision
+
+
 #### Datasets
 
 - [AIDER](https://drive.google.com/file/d/1sRY-7OwEc3BjYNv-rRpdlJms9e4HHf2V/view?usp=sharing)
