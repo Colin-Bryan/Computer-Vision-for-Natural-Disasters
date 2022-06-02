@@ -6,7 +6,7 @@ pydicom
 requests
 scikit_learn
 seaborn
-streamlit
+# streamlit
 torch
 torchsummary
 torchtext
