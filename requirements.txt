@@ -11,3 +11,4 @@ torch
 torchsummary
 torchtext
 torchvision
+gdown
