@@ -2,7 +2,6 @@ matplotlib
 numpy
 opencv_python
 pandas
-pydicom
 requests
 scikit_learn
 seaborn
@@ -11,4 +10,3 @@ torch
 torchsummary
 torchtext
 torchvision
-gdown
