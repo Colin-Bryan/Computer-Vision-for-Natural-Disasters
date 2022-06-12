@@ -1,12 +1,7 @@
 matplotlib
 numpy
-opencv_python
 pandas
-requests
-scikit_learn
-seaborn
-# streamlit
+streamlit
 torch
-torchsummary
-torchtext
 torchvision
+opencv_python
