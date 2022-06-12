@@ -9,7 +9,7 @@ def main():
     aider_prefiltered_filename = "AIDER_filtered.zip"
     # Get path to "AIDER_filtered.zip" to use for extracting
     path_aider_prefiltered = os.path.join(os.getcwd(), aider_prefiltered_filename)
-    print(f"Extracting AIDER_filtered.zip to {path_aider_prefiltered}")
+    print(f"Extracting AIDER_filtered.zip to {path_aider_prefiltered.split('.')[1]}")
     # Return a ZipFile object for the pathname path_aider_prefiltered
     zip_ref = zipfile.ZipFile(path_aider_prefiltered, 'r')
     zip_ref.extractall(os.getcwd()) # extract
@@ -21,7 +21,7 @@ def main():
     path_medic_original = os.path.join(os.getcwd(), medic_original_filename)
     # Return a TarFile object for the pathname path_medic_original
     tar = tarfile.open(path_medic_original)
-    print(f"Extracting data_disaster_types.tar.gz to {path_medic_original}")
+    print(f"Extracting data_disaster_types.tar.gz to {path_medic_original.split('.')[0]}")
     tar.extractall(os.getcwd()) # extract
     tar.close()
     print(f"Done extracting {medic_original_filename}")
