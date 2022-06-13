@@ -10,6 +10,7 @@ from pandas.core.frame import DataFrame
 AIDER_TRAIN_PATH =  os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/raw/AIDER_filtered/train'))
 AIDER_VAL_PATH =  os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/raw/AIDER_filtered/val'))
 MEDIC_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/raw/data_disaster_types'))
+RAW_DATA_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/raw'))
 PROCESSED_DATA_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/processed'))
 
 class CustomDataset(Dataset):
@@ -21,7 +22,7 @@ class CustomDataset(Dataset):
     def __init__(self, labels_df: DataFrame, data_dir: str, class_mapper: dict, transform=None):
         '''
         Args:
-            labels_df (DataFrame): Dataframe containing the image names and corresponding labels
+            labels_df (DataFrame): Dataframe containing (two columns for) the image names and corresponding labels
             data_dir (string): Path to directory containing the images
             class_mapper (dict): Dictionary mapping string labels to numeric labels
             transform (callable,optional): Optional transform to be applied to images
@@ -44,7 +45,8 @@ class CustomDataset(Dataset):
         Args:
             idx (integer): index value for which to get image and label
         '''
-        # Load the image
+        # Load the image: join data/raw folder path with image_path from labels_df (self.labels_df.iloc[idx, 0])
+        #   image_path should start with 'data_disaster_types' or 'AIDER_filtered'
         img_path = os.path.join(self.data_dir,
                                 self.labels_df.iloc[idx, 0])
 
@@ -53,7 +55,7 @@ class CustomDataset(Dataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # Use this for color images to rearrange channels BGR -> RGB
         image = Image.fromarray(image) # convert numpy array to PIL image
 
-        # Load the label
+        # Load the label: 'fire', 'flood', or 'not_disaster'
         label = self.labels_df.iloc[idx, 1]
         label = self.classmapper[label]
 
@@ -84,6 +86,7 @@ class CustomDataloader:
         return data_transforms
 
     def init_custom_dataset(self, train_df, val_df):
+        # classes for MEDIC/combined dataset
         classes = ['fire','flood', 'not_disaster']
         idx_to_class = {i:j for i,j in enumerate(classes)}
         class_to_idx = {v:k for k,v in idx_to_class.items()}
@@ -91,17 +94,18 @@ class CustomDataloader:
         data_transforms = self.get_data_transforms()
 
         train_dataset = CustomDataset(labels_df=train_df,
-                                data_dir=os.getcwd(),
+                                data_dir=RAW_DATA_PATH,
                                 class_mapper=class_to_idx,
                                 transform = data_transforms['train'])
 
         val_dataset = CustomDataset(labels_df=val_df,
-                                data_dir=os.getcwd(),
+                                data_dir=RAW_DATA_PATH,
                                 class_mapper=class_to_idx,
                                 transform = data_transforms['val'])
         return train_dataset, val_dataset
 
     def save_dataloader(self, dataloader, file_prefix):
+        # save dataloaders to use in model.py
         filename = f'{file_prefix}_dataloader.pkl'
         dataloader_path = os.path.join(PROCESSED_DATA_PATH, filename)
         torch.save(dataloader, dataloader_path)
@@ -125,13 +129,13 @@ class CustomDataloader:
 
     def filter_for_existing_paths(self, df):
         print(f'Number of rows before filtering for existing paths: {len(df)}')
-        all_paths = df[['image_path']].values.tolist()
+        all_paths = df['image_path'].values.tolist()
         non_existent_paths = []
         for path in all_paths:
-            path = path[0]
             full_path = os.path.join(MEDIC_PATH, path)
             if not os.path.exists(full_path):
                 non_existent_paths.append(path)
+        # keep rows that contain image_paths that correspond to existing images
         df = df[~df['image_path'].isin(non_existent_paths)]
         print(f'Number of rows after filtering for existing paths: {len(df)}')
         return df
@@ -144,44 +148,54 @@ class CustomDataloader:
         condition_2 = df['class_label'] == 'fire'
         condition_3 = df['class_label'] == 'not_disaster'
         filtered_df = df[condition_1 | condition_2 |  condition_3]
+        # need 'image_path' and 'class_label' only for custom dataset class
         filtered_df = filtered_df[['image_path', 'class_label']]
-        final_df = self.filter_for_existing_paths(filtered_df)
-        return final_df
+        # ensure that rows contain image_path values that correspond to existing images
+        filtered_df = self.filter_for_existing_paths(filtered_df)
+        # add MEDIC folder name after filtering to differentiate data sources before combining
+        filtered_df['image_path'] = 'data_disaster_types/' + filtered_df['image_path'].astype(str)
+        return filtered_df
 
     def combine_df(self, df, type_dataset):
+        # Please note that the functionality works only if the images from the 
+        #   AIDER folder are split into train and val folders this way
         AIDER_range = {
-            'train': {
-                'flood': [101, 526], #0
-                'fire': [101,521], #0
-                'normal': [1001,4390]
+            'train': { 
+                'flood': [101, 526], # consecutive values from 101 to 526:'flood_image_0101.jpg' to 'flood_image_0526.jpg'
+                'fire': [101, 521], # consecutive values from 101 to 526:'fire_image_0101.jpg' to 'fire_image_0521.jpg'
+                'normal': [1001, 4390] # consecutive values from 1001 to 4390: 'normal_image_1001.jpg' to 'normal_image_4390.jpg'
             },
             'val': {
-                'flood': [1, 100], #0001 to 0100
-                'fire': [1,100], #0001 to 0100
-                'normal': [1,1000] # 0001
+                'flood': [1, 100], # consecutive values from 0001 to 0100: 'flood_image_0001.jpg' to 'flood_image_0100.jpg'
+                'fire': [1, 100], # consecutive values from 0001 to 0100: 'fire_image_0001.jpg' to 'fire_image_0100.jpg'
+                'normal': [1, 1000] # consecutive values from 0001 to 1000: 'normal_image_0001.jpg' to 'normal_image_1000.jpg'
             }
         }
         ranges = AIDER_range[type_dataset]
         all_info = []
-        for disaster_type in ranges: # range is flood, fire, normal
+        for disaster_type in ranges:
             if disaster_type == 'normal':
+                # standardize label names across data sources
                 normalized_disaster_type = 'not_disaster'
             else:
                 normalized_disaster_type = disaster_type
-            lower = ranges[disaster_type][0]
-            upper = ranges[disaster_type][1]
-            for index in range(lower, upper+1): # for each disaster type
+            lower = ranges[disaster_type][0] # lower numerical bound in folder of type_dataset for disaster_type
+            upper = ranges[disaster_type][1] # upper numerical bound in folder of type_dataset for disaster_type
+            for index in range(lower, upper+1): # for each image with number index
                 str_index = str(index)
+                # The numerical portion of each image name all have four digits
                 num_zeros_before = 4 - len(str_index)
-                str_num = '0' * num_zeros_before + str(index)
-                base_path = AIDER_TRAIN_PATH if type_dataset == 'train' else AIDER_VAL_PATH
-                image_path = os.path.join(base_path, f'{disaster_type}/{disaster_type}_image{str_num}.jpg')
+                str_num = '0' * num_zeros_before + str_index
+                image_path = f'AIDER_filtered/{type_dataset}/{disaster_type}/{disaster_type}_image{str_num}.jpg'
                 all_info.append([image_path, normalized_disaster_type]) 
+        # create new dataframe for AIDER
         new_df = pd.DataFrame(all_info, columns=['image_path', 'class_label'])
+        # combine MEDIC and AIDER dataframes
         combined_df = pd.concat([df, new_df])
         return combined_df
 
     def write_df_as_tsv(self, df, df_name, filename):
+        # save dataframe as tsv files to use in model.py
         path = os.path.join(PROCESSED_DATA_PATH, filename)
         df.to_csv(path, sep="\t")
         print(f'Wrote {df_name} to {PROCESSED_DATA_PATH}')
