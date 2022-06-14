@@ -8,15 +8,17 @@ from pandas.core.frame import DataFrame
 PROCESSED_DATA_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/processed'))
 
 class CustomDataset(Dataset):
+    # Please note that this class is the same as the one from build_features.py
     '''
     Custom PyTorch Dataset for image classification
     Must contain 3 parts: __init__, __len__ and __getitem__
+    Used for MEDIC and combined dataset
     '''
 
     def __init__(self, labels_df: DataFrame, data_dir: str, class_mapper: dict, transform=None):
         '''
         Args:
-            labels_df (DataFrame): Dataframe containing the image names and corresponding labels
+            labels_df (DataFrame): Dataframe containing the image names (index 0) and corresponding labels (index 1)
             data_dir (string): Path to directory containing the images
             class_mapper (dict): Dictionary mapping string labels to numeric labels
             transform (callable,optional): Optional transform to be applied to images
@@ -39,7 +41,8 @@ class CustomDataset(Dataset):
         Args:
             idx (integer): index value for which to get image and label
         '''
-        # Load the image
+        # Load the image: join data/raw folder path with image_path from labels_df (self.labels_df.iloc[idx, 0])
+        #   image_path should start with 'data_disaster_types' or 'AIDER_filtered'
         img_path = os.path.join(self.data_dir,
                                 self.labels_df.iloc[idx, 0])
 
@@ -48,7 +51,7 @@ class CustomDataset(Dataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # Use this for color images to rearrange channels BGR -> RGB
         image = Image.fromarray(image) # convert numpy array to PIL image
 
-        # Load the label
+        # Load the label: 'fire', 'flood', or 'not_disaster'
         label = self.labels_df.iloc[idx, 1]
         label = self.classmapper[label]
 
