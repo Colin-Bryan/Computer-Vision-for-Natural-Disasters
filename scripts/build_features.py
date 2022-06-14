@@ -18,13 +18,15 @@ class CustomDataset(Dataset):
     '''
     Custom PyTorch Dataset for image classification
     Must contain 3 parts: __init__, __len__ and __getitem__
-    Used for MEDIC and combined dataset
+    Used for MEDIC (data_disaster_types) and combined dataset
     '''
 
     def __init__(self, labels_df: DataFrame, data_dir: str, class_mapper: dict, transform=None):
         '''
         Args:
-            labels_df (DataFrame): Dataframe containing the image names (index 0) and corresponding labels (index 1)
+            labels_df (DataFrame): Dataframe containing
+                'image_path' column (index 0): values start with 'AIDER_filtered' or 'data_disaster_types'
+                'class_label' column (index 1) for 'fire', 'flood', or 'not_disaster'
             data_dir (string): Path to directory containing the images
             class_mapper (dict): Dictionary mapping string labels to numeric labels
             transform (callable,optional): Optional transform to be applied to images
@@ -181,6 +183,7 @@ class CustomDataloader:
                 # standardize label names across data sources
                 normalized_disaster_type = 'not_disaster'
             else:
+                # 'flood' and 'fire' labels are constant between AIDER_filtered and MEDIC
                 normalized_disaster_type = disaster_type
             lower = ranges[disaster_type][0] # lower numerical bound in folder of type_dataset for disaster_type
             upper = ranges[disaster_type][1] # upper numerical bound in folder of type_dataset for disaster_type
@@ -189,6 +192,7 @@ class CustomDataloader:
                 # The numerical portion of each image name all have four digits
                 num_zeros_before = 4 - len(str_index)
                 str_num = '0' * num_zeros_before + str_index
+                # add data source folder name to differentiate between MEDIC images and to append data/raw to get full path
                 image_path = f'AIDER_filtered/{type_dataset}/{disaster_type}/{disaster_type}_image{str_num}.jpg'
                 all_info.append([image_path, normalized_disaster_type]) 
         # create new dataframe for AIDER
@@ -210,7 +214,9 @@ class CustomDataloader:
         return aider_train_dataset, aider_val_dataset
 
     def generate_medic_datasets(self):
+        # generate medic_train_df and medic_val_df in preparation for using custom dataset class
         medic_train_df = self.generate_medic_filtered_df('train')
+        # save intermediate tsv files to use in model.py
         self.write_df_as_tsv(medic_train_df, 'medic_train_df', 'filtered_medic_train.tsv')
         medic_val_df = self.generate_medic_filtered_df('test')
         self.write_df_as_tsv(medic_val_df, 'medic_val_df', 'filtered_medic_val.tsv')
@@ -218,7 +224,9 @@ class CustomDataloader:
         return medic_train_dataset, medic_val_dataset, medic_train_df, medic_val_df
 
     def generate_combined_datasets(self, medic_train_df, medic_val_df):
+        # generate combined_train_df and combined_val_df in preparation for using custom dataset class
         combined_train_df = self.combine_df(medic_train_df, 'train')
+        # save intermediate tsv files to use in model.py
         self.write_df_as_tsv(combined_train_df, 'combined_train_df', 'combined_train.tsv')
         combined_val_df = self.combine_df(medic_val_df, 'val')
         self.write_df_as_tsv(combined_val_df, 'combined_val_df', 'combined_val.tsv')

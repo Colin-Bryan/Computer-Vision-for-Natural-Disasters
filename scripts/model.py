@@ -8,16 +8,19 @@ import time
 import copy
 import torch.nn as nn
 import torch.optim as optim
+import numpy as np
 import pandas as pd
 import torchvision
+import torch.nn.functional as F
 
+# base folder paths that will be joined with relevant filenames to create full paths
 PROCESSED_DATA_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/processed'))
 MODELS_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'models'))
 
 class Model:    
     #Model Architecture: ResNet50 with transfer learning
-    def instantiate_train(self, net, dataloaders, dataset_sizes):
-    # Shut off autograd for all layers to freeze model so the layer weights are not trained
+    def instantiate_train(self, net, dataloaders, dataset_sizes, device):
+        # Shut off autograd for all layers to freeze model so the layer weights are not trained
         for param in net.parameters():
             param.requires_grad = False
 
@@ -36,9 +39,6 @@ class Model:
 
         # Learning rate scheduler - decay LR by a factor of 0.1 every 7 epochs
         lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
-
-        # Set device
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Train the model
         net = self.train_model(net, criterion, optimizer, dataloaders, lr_scheduler, device, dataset_sizes)
@@ -117,6 +117,47 @@ class Model:
 
         return model
 
+    def test_model(self, model, test_loader, device):
+        model = model.to(device)
+        # Turn autograd off
+        with torch.no_grad():
+
+            # Set the model to evaluation mode
+            model.eval()
+
+            # Set up lists to store true and predicted values
+            y_true = []
+            test_preds = []
+
+            # Calculate the predictions on the test set and add to list
+            for data in test_loader:
+                inputs, labels = data[0].to(device), data[1].to(device)
+                # Feed inputs through model to get raw scores
+                logits = model.forward(inputs)
+                # Convert raw scores to probabilities (not necessary since we just care about discrete probs in this case)
+                probs = F.softmax(logits,dim=1)
+                # Get discrete predictions using argmax
+                preds = np.argmax(probs.numpy(),axis=1)
+                # Add predictions and actuals to lists
+                test_preds.extend(preds)
+                y_true.extend(labels)
+
+            # Calculate the accuracy
+            test_preds = np.array(test_preds)
+            y_true = np.array(y_true)
+            test_acc = np.sum(test_preds == y_true)/y_true.shape[0]
+            
+            # Recall for each class
+            recall_vals = []
+            for i in range(3):
+                class_idx = np.argwhere(y_true==i)
+                total = len(class_idx)
+                correct = np.sum(test_preds[class_idx]==i)
+                recall = correct / total
+                recall_vals.append(recall)
+        
+        return test_acc, recall_vals
+
     def savemodel(self, net):
         #Save the entire model
         filename = 'fullmodel.pt'
@@ -189,12 +230,19 @@ def main():
     combined_val_df = pd.read_csv(os.path.join(PROCESSED_DATA_PATH ,'combined_val.tsv'), sep='\t', header=0)
 
     # Store size of training and validation sets
-    dataset_sizes = {'train':len(combined_train_df),'val':len(combined_val_df)}
+    dataset_sizes = {'train': len(combined_train_df),'val': len(combined_val_df)}
     models = [torchvision.models.resnet50(pretrained=True)]
+    # labels for combined dataset
+    classes = ['fire','flood', 'not_disaster']
     
     model_obj = Model()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for model in models:
-        model_obj.instantiate_train(model, dataloaders, dataset_sizes)
+        model_obj.instantiate_train(model, dataloaders, dataset_sizes, device)
+        acc, recall_vals = model_obj.test_model(model, val_dataloader, device)
+        print('Test set accuracy is {:.3f}'.format(acc))
+        for i in range(3):
+            print('For class {}, recall is {}'.format(classes[i], recall_vals[i]))
         model_obj.savemodel(model)
 
 if __name__ == "__main__":
