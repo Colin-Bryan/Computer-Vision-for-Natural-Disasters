@@ -23,7 +23,7 @@ class Model:
 
         # Get the number of inputs to final Linear layer
         num_ftrs = net.fc.in_features
-        #print(num_ftrs)
+
         # Replace final Linear layer with a new Linear with the same number of inputs but just 3 outputs,
         # since we have 3 classes - fire, flood and normal or diaster
         net.fc = nn.Linear(num_ftrs, 3)
@@ -41,7 +41,7 @@ class Model:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Train the model
-        net = self.train_model(net, criterion, optimizer, dataloaders, lr_scheduler, device, dataset_sizes, num_epochs=1)
+        net = self.train_model(net, criterion, optimizer, dataloaders, lr_scheduler, device, dataset_sizes)
 
     def train_model(self, model, criterion, optimizer, dataloaders, scheduler, device, dataset_sizes, num_epochs=25):
         model = model.to(device) # Send model to GPU if available
@@ -117,11 +117,10 @@ class Model:
 
         return model
 
-    #Save the entire model
     def savemodel(self, net):
+        #Save the entire model
         filename = 'fullmodel.pt'
         path = os.path.join(MODELS_PATH, filename)
-        # Save the entire model
         torch.save(net, path)
 
 class CustomDataset(Dataset):
@@ -178,13 +177,12 @@ class CustomDataset(Dataset):
         return image, label
 
 def main():
-    # load dataloaders and get dataset sizes from length of tsv files
+    # load dataloaders and get dataset sizes from tsv files
     combined_train_dataloader_path = os.path.join(PROCESSED_DATA_PATH, 'combined_train_dataloader.pkl')
     train_dataloader = torch.load(combined_train_dataloader_path)
-
-    # load dataloaders and get dataset sizes from length of tsv files
     combined_valdata_loader_path = os.path.join(PROCESSED_DATA_PATH, 'combined_val_dataloader.pkl')
     val_dataloader = torch.load(combined_valdata_loader_path)
+
     # Set up dict for dataloaders
     dataloaders = {'train':train_dataloader,'val':val_dataloader}
     combined_train_df = pd.read_csv(os.path.join(PROCESSED_DATA_PATH ,'combined_train.tsv'), sep='\t', header=0)
