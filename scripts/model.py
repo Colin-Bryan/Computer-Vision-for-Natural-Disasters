@@ -1,5 +1,4 @@
 import os
-from sklearn import datasets
 import torch
 import cv2
 from PIL import Image
@@ -12,11 +11,12 @@ import torch.optim as optim
 import pandas as pd
 import torchvision
 
-
 PROCESSED_DATA_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/processed'))
+MODELS_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'models'))
+
 class Model:    
     #Model Architecture: ResNet50 with transfer learning
-    def instantiate_train_visualize(self, net, dataloaders, dataset_sizes, mapping, tensor):
+    def instantiate_train(self, net, dataloaders, dataset_sizes):
     # Shut off autograd for all layers to freeze model so the layer weights are not trained
         for param in net.parameters():
             param.requires_grad = False
@@ -41,10 +41,7 @@ class Model:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Train the model
-        net = self.train_model(net, criterion, optimizer, dataloaders, lr_scheduler, device, dataset_sizes, num_epochs=2)
-
-        # Visualize results 
-        self.visualize_results(net, dataloaders['val'], device, mapping, tensor)
+        net = self.train_model(net, criterion, optimizer, dataloaders, lr_scheduler, device, dataset_sizes, num_epochs=1)
 
     def train_model(self, model, criterion, optimizer, dataloaders, scheduler, device, dataset_sizes, num_epochs=25):
         model = model.to(device) # Send model to GPU if available
@@ -120,8 +117,12 @@ class Model:
 
         return model
 
-
-
+    #Save the entire model
+    def savemodel(self, net):
+        filename = 'fullmodel.pt'
+        path = os.path.join(MODELS_PATH, filename)
+        # Save the entire model
+        torch.save(net, path)
 
 class CustomDataset(Dataset):
     # Please note that this class is the same as the one from build_features.py
@@ -184,21 +185,19 @@ def main():
     # load dataloaders and get dataset sizes from length of tsv files
     combined_valdata_loader_path = os.path.join(PROCESSED_DATA_PATH, 'combined_val_dataloader.pkl')
     val_dataloader = torch.load(combined_valdata_loader_path)
-# Set up dict for dataloaders
+    # Set up dict for dataloaders
     dataloaders = {'train':train_dataloader,'val':val_dataloader}
     combined_train_df = pd.read_csv(os.path.join(PROCESSED_DATA_PATH ,'combined_train.tsv'), sep='\t', header=0)
     combined_val_df = pd.read_csv(os.path.join(PROCESSED_DATA_PATH ,'combined_val.tsv'), sep='\t', header=0)
 
-   
     # Store size of training and validation sets
     dataset_sizes = {'train':len(combined_train_df),'val':len(combined_val_df)}
-    print(dataset_sizes)
     models = [torchvision.models.resnet50(pretrained=True)]
     
-    model=Model()
+    model_obj = Model()
     for model in models:
-       model.instantiate_train_visualize(model, dataloaders, dataset_sizes)
-        savemodel(model)
+        model_obj.instantiate_train(model, dataloaders, dataset_sizes)
+        model_obj.savemodel(model)
 
 if __name__ == "__main__":
     main()
