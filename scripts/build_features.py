@@ -7,6 +7,7 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Dataset
 from pandas.core.frame import DataFrame
 
+# base folder paths that will be joined with relevant filenames to create full paths
 AIDER_TRAIN_PATH =  os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/raw/AIDER_filtered/train'))
 AIDER_VAL_PATH =  os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/raw/AIDER_filtered/val'))
 MEDIC_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/raw/data_disaster_types'))
@@ -17,12 +18,13 @@ class CustomDataset(Dataset):
     '''
     Custom PyTorch Dataset for image classification
     Must contain 3 parts: __init__, __len__ and __getitem__
+    Used for MEDIC and combined dataset
     '''
 
     def __init__(self, labels_df: DataFrame, data_dir: str, class_mapper: dict, transform=None):
         '''
         Args:
-            labels_df (DataFrame): Dataframe containing (two columns for) the image names and corresponding labels
+            labels_df (DataFrame): Dataframe containing the image names (index 0) and corresponding labels (index 1)
             data_dir (string): Path to directory containing the images
             class_mapper (dict): Dictionary mapping string labels to numeric labels
             transform (callable,optional): Optional transform to be applied to images
@@ -124,7 +126,7 @@ class CustomDataloader:
             shuffle=False, num_workers=2)
         self.save_dataloader(val_loader, f'{data_source}_val')
         # Store size of training and validation sets
-        dataset_sizes = {'train':len(train_dataset),'val':len(val_dataset)}
+        dataset_sizes = {'train': len(train_dataset),'val': len(val_dataset)}
         return dataset_sizes
 
     def filter_for_existing_paths(self, df):
@@ -147,8 +149,9 @@ class CustomDataloader:
         condition_1 = df['class_label'] == 'flood'
         condition_2 = df['class_label'] == 'fire'
         condition_3 = df['class_label'] == 'not_disaster'
+        # filter for rows that have labels 'flood', 'fire', or 'not_disaster'
         filtered_df = df[condition_1 | condition_2 |  condition_3]
-        # need 'image_path' and 'class_label' only for custom dataset class
+        # need 'image_path' and 'class_label' columns only for custom dataset class
         filtered_df = filtered_df[['image_path', 'class_label']]
         # ensure that rows contain image_path values that correspond to existing images
         filtered_df = self.filter_for_existing_paths(filtered_df)
@@ -161,14 +164,14 @@ class CustomDataloader:
         #   AIDER folder are split into train and val folders this way
         AIDER_range = {
             'train': { 
-                'flood': [101, 526], # consecutive values from 101 to 526:'flood_image_0101.jpg' to 'flood_image_0526.jpg'
-                'fire': [101, 521], # consecutive values from 101 to 526:'fire_image_0101.jpg' to 'fire_image_0521.jpg'
-                'normal': [1001, 4390] # consecutive values from 1001 to 4390: 'normal_image_1001.jpg' to 'normal_image_4390.jpg'
+                'flood': [101, 526], # consecutive values from 101 to 526:'flood_image0101.jpg' to 'flood_image0526.jpg'
+                'fire': [101, 521], # consecutive values from 101 to 526:'fire_image0101.jpg' to 'fire_image0521.jpg'
+                'normal': [1001, 4390] # consecutive values from 1001 to 4390: 'normal_image1001.jpg' to 'normal_image4390.jpg'
             },
             'val': {
-                'flood': [1, 100], # consecutive values from 0001 to 0100: 'flood_image_0001.jpg' to 'flood_image_0100.jpg'
-                'fire': [1, 100], # consecutive values from 0001 to 0100: 'fire_image_0001.jpg' to 'fire_image_0100.jpg'
-                'normal': [1, 1000] # consecutive values from 0001 to 1000: 'normal_image_0001.jpg' to 'normal_image_1000.jpg'
+                'flood': [1, 100], # consecutive values from 0001 to 0100: 'flood_image0001.jpg' to 'flood_image0100.jpg'
+                'fire': [1, 100], # consecutive values from 0001 to 0100: 'fire_image0001.jpg' to 'fire_image0100.jpg'
+                'normal': [1, 1000] # consecutive values from 0001 to 1000: 'normal_image0001.jpg' to 'normal_image1000.jpg'
             }
         }
         ranges = AIDER_range[type_dataset]
@@ -224,6 +227,7 @@ class CustomDataloader:
 
 def main():
     custom_dataloader = CustomDataloader()
+    # generate datasets for the data sources
     aider_train_dataset, aider_val_dataset = custom_dataloader.generate_aider_datasets()
     medic_train_dataset, medic_val_dataset, medic_train_df, medic_val_df = custom_dataloader.generate_medic_datasets()
     combined_train_dataset, combined_val_dataset = custom_dataloader.generate_combined_datasets(medic_train_df, medic_val_df)
@@ -244,7 +248,7 @@ def main():
     }
     batch_size = 4
 
-    for data_source in data_sources:
+    for data_source in data_sources: # 'AIDER', 'MEDIC', or 'combined'
         train_dataset = data_sources[data_source]['train']
         val_dataset =  data_sources[data_source]['val']
         dataset_sizes = custom_dataloader.init_dataloaders(train_dataset, val_dataset, batch_size, data_source)
