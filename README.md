@@ -9,11 +9,11 @@
 - [MEDIC (Multi-Task Learning for Disaster Image Classification)](https://crisisnlp.qcri.org/crisis-image-datasets-asonam20)
 
 ## Getting started
-1. Download the following files to data/raw folder
+1. Download the following files to the data/raw folder
 - [MEDIC (data_disaster_types)](https://crisisnlp.qcri.org/crisis-image-datasets-asonam20)
 Download the 3.2G dataset labelled "Disaster types" towards the bottom of the page.
 - [AIDER_filtered](https://drive.google.com/file/d/15w4mdKR9LHjPc5WCeUcswoI34_pzj41r/view?usp=sharing)
-2. Install the requirements needed to run the python scripts.
+2. Install the requirements needed to run the python scripts
 ```
 pip install -r requirements.txt
 ```
@@ -29,4 +29,4 @@ python scripts/build_features.py
 ```
 python scripts/model.py
 ```
-Please note that model.py may need to be run on GPU.
+We are using the ResNet-50 pre-trained model. Please note that model.py may need to be run on GPU.
