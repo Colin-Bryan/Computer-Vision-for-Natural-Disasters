@@ -14,8 +14,8 @@
 
 #### Links to papers
 
-- [AIDER] (https://openaccess.thecvf.com/content_CVPRW_2019/papers/UAVision/Kyrkou_Deep-Learning-Based_Aerial_Image_Classification_for_Emergency_Response_Applications_Using_Unmanned_CVPRW_2019_paper)
-- [MEDIC] (https://arxiv.org/abs/2108.12828)
+- [AIDER](https://openaccess.thecvf.com/content_CVPRW_2019/papers/UAVision/Kyrkou_Deep-Learning-Based_Aerial_Image_Classification_for_Emergency_Response_Applications_Using_Unmanned_CVPRW_2019_paper)
+- [MEDIC](https://arxiv.org/abs/2108.12828)
 
 ## Getting started
 1. Download the following files to the data/raw folder
@@ -26,7 +26,7 @@ Download the 3.2G dataset labelled "Disaster types" towards the bottom of the pa
 ```
 pip install -r requirements.txt
 ```
-3. Extract from AIDER_filtered.zip and data_disaster_types.tar.gz
+3. Extract from AIDER_filtered.zip and data_disaster_types.tar.gz (MEDIC dataset)
 ```
 python scripts/make_datasets.py
 ```
