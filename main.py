@@ -76,7 +76,7 @@ def run():
     ## Create Title
     st.title('Natural Disaster Identification')
     # Create Subheader
-    st.subheader("Upload Single or Multiple Images")
+    st.subheader("Upload an Image")
 
     # Load Model
     model = load_model()
