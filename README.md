@@ -39,3 +39,9 @@ python scripts/build_features.py
 python scripts/model.py
 ```
 We are using the ResNet-50 pre-trained model. Please note that model.py may need to be run on GPU.
+
+6. Create UI proof of concept for test deployment and run app
+```
+python main.py
+```
+We used streamlit to create a front-end that can accept one image and classify according to our trained model
