@@ -5,8 +5,8 @@
 
 #### Links to original datasets
 
-- [AIDER](https://zenodo.org/record/3888300#.YqkdjOjMKUl)
-- [MEDIC/data_disaster_types](https://crisisnlp.qcri.org/crisis-image-datasets-asonam20)
+- [AIDER (Aerial Image Dataset for Emergency Response Applications)](https://zenodo.org/record/3888300#.YqkdjOjMKUl)
+- [MEDIC (Multi-Task Learning for Disaster Image Classification)](https://crisisnlp.qcri.org/crisis-image-datasets-asonam20)
 
 ## Getting started
 1. Download the following files to this folder (data/raw)
@@ -29,4 +29,4 @@ python scripts/build_features.py
 ```
 python scripts/model.py
 ```
-Please note that model.py will need to be run on GPU.
+Please note that model.py may need to be run on GPU.
