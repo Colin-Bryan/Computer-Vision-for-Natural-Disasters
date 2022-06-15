@@ -8,3 +8,9 @@ opencv_python
 io
 cv2
 PIL
+urllib.request
+tarfile
+copy
+time
+torchsummary 
+zipfile
