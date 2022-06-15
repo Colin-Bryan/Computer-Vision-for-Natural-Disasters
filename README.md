@@ -1,5 +1,6 @@
 # Identifying Disasters from Different Perspectives
-
+Links to AIDER:https://openaccess.thecvf.com/content_CVPRW_2019/papers/UAVision/Kyrkou_Deep-Learning-Based_Aerial_Image_Classification_for_Emergency_Response_Applications_Using_Unmanned_CVPRW_2019_paper
+Link to MEDIC:https://arxiv.org/abs/2108.12828
 #### Category: Social Media & News
 #### Type: Computer Vision
 
