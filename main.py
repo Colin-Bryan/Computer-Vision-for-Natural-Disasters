@@ -7,75 +7,75 @@ import cv2
 from PIL import Image
 from torchvision import transforms
 
+
 # Function to display image
-def load_image(model):   
-    # Create file uploader with streamlit that accepts multiple images at once with validation
-    uploaded_files= st.file_uploader("", type=["png","jpg","jpeg"], accept_multiple_files = True)
+def load_image():   
+    # Create file uploader with streamlit that accepts one image at a time with validation
+    uploaded_file = st.file_uploader("", type=["png","jpg","jpeg"], accept_multiple_files = False)
 
-    # If file(s) uploaded
-    if uploaded_files is not None:
-        # Loop through each
-        for image_file in uploaded_files:
-            # Get image data
-            image_data = image_file.getvalue()
+    # If file uploaded
+    if uploaded_file is not None:
+        # Get image data
+        image_data = uploaded_file.getvalue()
+        # Open image in UI to display
+        st.image(image_data)
+        # Return image_data converted to PIL image object
+        return Image.open(io.BytesIO(image_data))
 
-            # Open image in UI
-            st.image(image_data)
-
-            # Run image through model and make predictions
-            predict(model, image_data)
-
-# Each user interation with page causes streamlit to run the python file
-# top down. Therefore, use the cache() decorator to prevent streamlit
-# from reloading the model each time a user uploads and image
-
-st.cache()
+# Load model function and return
 def load_model():
+    # Load saved model from models folder
     model = torch.load("./models/fullmodel.pt", map_location=torch.device('cpu' ))
+    # Set model to evaluation mode
+    model.eval()
     return model
 
+# Create predict function
 def predict(model, image):
-    image_prep = transforms.Compose([
-          transforms.Resize(256),
-          transforms.CenterCrop(224),
-          transforms.ToTensor(),
-          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-      ])
-    # need to add code for data transformers
+    # Create labels and map to numbers
+    labels = {0:'fire', 1:'flood', 2:'not_disaster'}
 
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # Use this for color images to rearrange channels BGR -> RGB
-    image = Image.fromarray(image) 
-    transformed_image = image_prep(image)
+    # Prep image to run through model
 
+######### Need to do the same thing we are doing to images when running through our model ############
+    preprocess = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+#######################################################################################################
+    input_tensor = preprocess(image)
+    input_batch = input_tensor.unsqueeze(0)
+
+######### Need to run the same predictions function we are using ######################################
     with torch.no_grad():
-
-        model.eval()
-    
-        prediction = model(transformed_image)
-        st.write(f"The predicted value for this image is... {prediction}")
-    
+        output = model(input_batch)
+#######################################################################################################
+    return output
 
 def run():
     ## Create Title
-    st.title('Disaster Identification')
+    st.title('Natural Disaster Identification')
     # Create Subheader
     st.subheader("Upload Single or Multiple Images")
 
     # Load Model
     model = load_model()
 
-    # Load labels
-    #categories = load_labels()
-
     # Load image
-    load_image(model)
+    image = load_image()
 
-    # Load result
-    #result = st.button('Run on image')
-    #if result:
-    #    st.write('Calculating results...')
-    #    predict(model, image)
+    # Create button called result that starts prediction
+    result = st.button('Run on image')
 
+    # If result is clicked
+    if result:
+        st.write('Calculating results...')
 
+        # Run prediction
+        predict(model, image)
+
+# Start
 if __name__ == '__main__':
     run()
