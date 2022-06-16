@@ -16,7 +16,7 @@ We used images from AIDER (Aerial Image Dataset for Emergency Response Applicati
 - [AIDER](https://openaccess.thecvf.com/content_CVPRW_2019/papers/UAVision/Kyrkou_Deep-Learning-Based_Aerial_Image_Classification_for_Emergency_Response_Applications_Using_Unmanned_CVPRW_2019_paper)
 - [MEDIC](https://arxiv.org/pdf/2108.12828.pdf)
 
-## Interact with the streamlit front-end to classify an image
+## Use Streamlit to classify an image
 1. Install the requirements needed to use Streamlit
 ```
 pip install -r requirements.txt
