@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import torchvision
 import torch.nn.functional as F
+from sklearn.metrics import classification_report
 
 # base folder paths that will be joined with relevant filenames to create full paths
 PROCESSED_DATA_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/processed'))
@@ -117,11 +118,10 @@ class Model:
 
         return model
 
-    def test_model(self, model, test_loader, device):
+    def test_model(model,test_loader,device):
         model = model.to(device)
         # Turn autograd off
         with torch.no_grad():
-
             # Set the model to evaluation mode
             model.eval()
 
@@ -137,26 +137,13 @@ class Model:
                 # Convert raw scores to probabilities (not necessary since we just care about discrete probs in this case)
                 probs = F.softmax(logits,dim=1)
                 # Get discrete predictions using argmax
-                preds = np.argmax(probs.numpy(),axis=1)
+                preds = np.argmax(probs.cpu().numpy(),axis=1)
                 # Add predictions and actuals to lists
                 test_preds.extend(preds)
-                y_true.extend(labels)
+                y_true.extend(labels.cpu().numpy())
 
-            # Calculate the accuracy
-            test_preds = np.array(test_preds)
-            y_true = np.array(y_true)
-            test_acc = np.sum(test_preds == y_true)/y_true.shape[0]
-            
-            # Recall for each class
-            recall_vals = []
-            for i in range(3):
-                class_idx = np.argwhere(y_true==i)
-                total = len(class_idx)
-                correct = np.sum(test_preds[class_idx]==i)
-                recall = correct / total
-                recall_vals.append(recall)
-        
-        return test_acc, recall_vals
+            report = classification_report(y_true, test_preds, labels = [0, 1, 2], target_names=['fire','flood', 'not_disaster'])
+        return report
 
     def savemodel(self, net):
         #Save the entire model
@@ -232,17 +219,14 @@ def main():
     # Store size of training and validation sets
     dataset_sizes = {'train': len(combined_train_df),'val': len(combined_val_df)}
     models = [torchvision.models.resnet50(pretrained=True)]
-    # labels for combined dataset
-    classes = ['fire','flood', 'not_disaster']
     
     model_obj = Model()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     for model in models:
         model_obj.instantiate_train(model, dataloaders, dataset_sizes, device)
-        acc, recall_vals = model_obj.test_model(model, val_dataloader, device)
-        print('Test set accuracy is {:.3f}'.format(acc))
-        for i in range(3):
-            print('For class {}, recall is {}'.format(classes[i], recall_vals[i]))
+        report = model_obj.test_model(model,dataloaders['val'],device)
+        print(f"Printing Classification Report")
+        print(report)
         model_obj.savemodel(model)
 
 if __name__ == "__main__":
