@@ -7,3 +7,4 @@ torchvision
 opencv_python
 Pillow
 torchsummary 
+scikit-learn
